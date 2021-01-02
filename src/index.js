@@ -6,9 +6,7 @@ class Collection {
 		this.collection = [];
 		this.pk = 'id';
 		this.qnty = 0;
-		if (callback) {
-			this.throwOrSetCallback(callback);
-		}
+		this.callback = this.throwOrGetCallback(callback);
 	}
 
 	get primaryKey() {
@@ -35,6 +33,7 @@ class Collection {
 			this.throwNotObject(obj);
 		}
 		this.collection = arr;
+		this.triggerCallback();
 	}
 
 	set quantify(number) {
@@ -47,14 +46,16 @@ class Collection {
 		return this.qnty;
 	}
 
-	throwOrSetCallback(callback) {
-		if (! callback instanceof Function) {
-			throw new Error('Collection constructor only accpets a function as optional argument.');
+	throwOrGetCallback(callback) {
+		if (callback !== null) {
+			if (! callback instanceof Function) {
+				throw new Error('Collection constructor only accpets a function as optional argument.');
+			}
+			if (callback.length != 1) {
+				throw new Error('Collection constructor argument, if given, must be an one parameter function.');
+			}
 		}
-		if (callback.length != 1) {
-			throw new Error('Collection constructor argument, if given, must be an one parameter function.');
-		}
-		this.callback = callback;
+		return callback;
 	}
 
 	throwNotArray(arr) {
@@ -98,6 +99,12 @@ class Collection {
 		}
 	}
 
+	triggerCallback() {
+		if (this.callback) {
+			this.callback(this.items);
+		}
+	}
+
 	isValidObject(obj) {
 		return obj.hasOwnProperty(this.pk);
 	}
@@ -124,6 +131,7 @@ class Collection {
 			item = this.adjustObjectQuantity(item);
 		}
 		this.collection = [...this.collection, item];
+		this.triggerCallback();
 		return true;
 	}
 

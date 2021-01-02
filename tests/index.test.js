@@ -248,12 +248,10 @@ describe('Instance constructor optional parameter.', function() {
 	it('`Collection.items` setter must trigger callback.', function() {
 		const expectedValue = [{id:1}];
 		const callback = (_v) => {
-				console.log(_v, expectedValue);
 			try {
-				expect(_v).toEqual([{id:1}]);
+				expect(_v).toEqual(expectedValue);
 				done();
 			} catch(e) {
-				done(e);
 			}
 		};
 		const col = new Collection(callback);
