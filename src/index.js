@@ -2,10 +2,13 @@
  * Collection.
  */
 class Collection {
-	constructor() {
+	constructor(callback = null) {
 		this.collection = [];
 		this.pk = 'id';
 		this.qnty = 0;
+		if (callback) {
+			this.throwOrSetCallback(callback);
+		}
 	}
 
 	get primaryKey() {
@@ -13,9 +16,8 @@ class Collection {
 	}
 
 	set primaryKey(pk) {
-		if (typeof pk !== 'string') {
-			throw new Error('only strings can be passed to `collection.primaryKey`.');
-		}
+		this.throwAlreadyPopulated();
+		this.throwNotPrimaryKey(pk);
 		this.pk = pk;
 	}
 
@@ -28,32 +30,62 @@ class Collection {
 	}
 
 	set items(arr) {
-		if (Array.isArray(arr)) {
-			for (let obj in arr) {
-				this.throwNonObject(obj);
-			}
-			this.collection = arr;
-		} else {
-			throw new Error('`Collection.items` only can be an array');
+		this.throwNotArray(arr);
+		for (let obj of arr) {
+			this.throwNotObject(obj);
 		}
+		this.collection = arr;
 	}
 
 	set quantify(number) {
-		if (isNaN(number) || number < 0) {
-			throw new Error('Collection.quantify must be a non-negative integer.');
-		}
+		this.throwNotNonNegNumber(number);
 		this.qnty = number;
+		this.adjustItemsQuantity();
 	}
 
 	get quantify() {
 		return this.qnty;
 	}
 
-	isValidObject(obj) {
-		return obj.hasOwnProperty(this.pk);
+	throwOrSetCallback(callback) {
+		if (! callback instanceof Function) {
+			throw new Error('Collection constructor only accpets a function as optional argument.');
+		}
+		if (callback.length != 1) {
+			throw new Error('Collection constructor argument, if given, must be an one parameter function.');
+		}
+		this.callback = callback;
 	}
 
-	throwNonObject(obj) {
+	throwNotArray(arr) {
+		if (! Array.isArray(arr)) {
+			throw new Error('`Collection.items` only can be an array');
+		}
+	}
+
+	throwAlreadyPopulated() {
+		if (this.length > 0) {
+			throw new Error('`Collection.primaryKey` cannot be set after populated `Collection.items`.');
+		}
+	}
+
+	throwNotPrimaryKey(pk) {
+		if (typeof pk !== 'string') {
+			throw new Error('only strings can be passed to `collection.primaryKey`.');
+		}
+	}
+
+	throwNotNonNegNumber(number) {
+		if (
+			typeof number !== 'number'
+			|| isNaN(number)
+			|| number < 0
+		) {
+			throw new Error('Collection.quantify must be a non-negative integer.');
+		}
+	}
+
+	throwNotObject(obj) {
 		if (
 			Array.isArray(obj)
 			|| typeof obj !== 'object'
@@ -66,22 +98,59 @@ class Collection {
 		}
 	}
 
-	adjustQuantity(obj) {
+	isValidObject(obj) {
+		return obj.hasOwnProperty(this.pk);
+	}
+
+	adjustObjectQuantity(obj) {
 		obj.quantity = this.quantify;
 		return obj;
 	}
 
+	adjustItemsQuantity() {
+		let arr = [];
+		for (let obj of this.items) {
+			arr.push(this.adjustObjectQuantity(obj));
+		}
+		this.items = arr;
+	}
+
 	push(item) {
-		this.throwNonObject(item);
+		this.throwNotObject(item);
 		const alreadyIn = this.collection.some(_i => _i[this.pk] === item[this.pk]);
 		if (alreadyIn) return false;
 
 		if (this.quantify > 0) {
-			item = this.adjustQuantity(item);
+			item = this.adjustObjectQuantity(item);
 		}
 		this.collection = [...this.collection, item];
 		return true;
 	}
 
+	increase(idInCollection, increment = 1) {
+		if (this.quantify === 0) {
+			throw new Error('Collection.quantify must be positive integer to unlock Collection::increase method usage.');
+		}
+		let item = this.collection.find(
+			_o => _o[this.primaryKey] === idInCollection
+		);
+		if (! this.isValidObject(item)) {
+			throw new Error('There is no match object with requested value of `Collection.primaryKey`.');
+		}
+		item.quantity += increment;
+	}
+
+	setAmmount(idInCollection, ammount) {
+		if (this.quantify === 0) {
+			throw new Error('Collection.quantify must be positive integer to unlock Collection::setAmmount method usage.');
+		}
+		let item = this.collection.find(
+			_o => _o[this.primaryKey] === idInCollection
+		);
+		if (! this.isValidObject(item)) {
+			throw new Error('There is no match object with requested value of `Collection.primaryKey`.');
+		}
+		item.quantity = ammount;
+	}
 }
 export default Collection;

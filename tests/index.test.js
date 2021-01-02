@@ -58,7 +58,7 @@ describe('Instance must throw.', function() {
 			try {
 				col.primaryKey = 'customId';
 			} catch(e) {
-				expect(e.message).toBe('only strings can be passed to `Collection.primaryKey` cannot be set after populated `Collection.items`.');
+				expect(e.message).toBe('`Collection.primaryKey` cannot be set after populated `Collection.items`.');
 			}
 		});
 		it('trhows if try to add invalid object to Collection.items.', function() {
@@ -111,12 +111,31 @@ describe('Instance must throw.', function() {
 			}
 		});
 	});
+	describe('Collection constructor issues.', function() {
+		it('throws if other than function is passed to constructor.', function() {
+			expect.assertions(1);
+			try {
+				new Collection({cbk:null});
+			} catch(e) {
+				expect(e.message).toBe('Collection constructor only accpets a function as optional argument.');
+			}
+		});
+		it('throws if the given function does not require an argument.', function() {
+			expect.assertions(1);
+			try {
+				new Collection(function(){});
+			} catch(e) {
+				expect(e.message).toBe('Collection constructor argument, if given, must be an one parameter function.');
+			}
+		});
+	});
 });
 describe('Instance must not throw.', function() {
 	describe('Collection initial values', function() {
 		it('has empty array as items.', function() {
 			const col = new Collection();
-			expect(col.items).toBe([]);
+			const emptyArray = [];
+			expect(col.items).toEqual([]);
 		});
 		it('has `id` as primaryKey.', function() {
 			const col = new Collection();
@@ -132,7 +151,8 @@ describe('Instance must not throw.', function() {
 			const expectedObj = {id:1, quantity:2};
 			col.quantify = 1;
 			col.push(obj);
-			expect(col.items).toBe([expectedObj]);
+			col.increase(obj.id);
+			expect(col.items).toEqual([expectedObj]);
 		});
 	});
 	describe('Collection configuration', function() {
@@ -167,7 +187,7 @@ describe('Instance must not throw.', function() {
 			const col = new Collection();
 			col.items = newArr;
 			col.quantify = customQuantify;
-			expect(col.items).toBe(quantifiedNewCol);
+			expect(col.items).toEqual(quantifiedNewCol);
 		});
 	});
 	describe('Collection usage (methods)', function() {
@@ -184,7 +204,7 @@ describe('Instance must not throw.', function() {
 			const col = new Collection();
 			col.push(newObj);
 			col.quantify = customQuantify;
-			expect(col.items).toBe([quantifiedNewObj]);
+			expect(col.items).toEqual([quantifiedNewObj]);
 		});
 		it('postitive Collection.quantify adds `quantity` property to incoming Collection.items objects.', function() {
 			const customQuantify = 1;
@@ -193,7 +213,7 @@ describe('Instance must not throw.', function() {
 			const col = new Collection();
 			col.quantify = customQuantify;
 			col.push(newObj);
-			expect(col.items).toBe([quantifiedNewObj]);
+			expect(col.items).toEqual([quantifiedNewObj]);
 		});
 		it('if Collection.quantify is positive, one could increase a specific item quantity by ammount.', function() {
 			const newObj = {id:1};
@@ -202,7 +222,7 @@ describe('Instance must not throw.', function() {
 			col.quantify = 1;
 			col.push(newObj);
 			col.increase(1, 2);
-			expect(col.items).toBe([expectedObj]);
+			expect(col.items).toEqual([expectedObj]);
 		});
 		it('if Collection.quantify is positive, one could decrease a specific item quantity by increasing negative ammount.', function() {
 			const newObj = {id:1};
@@ -211,7 +231,7 @@ describe('Instance must not throw.', function() {
 			col.quantify = 2;
 			col.push(newObj);
 			col.increase(1, -1);
-			expect(col.items).toBe([expectedObj]);
+			expect(col.items).toEqual([expectedObj]);
 		});
 		it('if Collection.quantify is positive, one could set a specific item quantity via setAmmount method.', function() {
 			const newObj = {id:1};
@@ -220,7 +240,23 @@ describe('Instance must not throw.', function() {
 			col.quantify = 2;
 			col.push(newObj);
 			col.setAmmount(1, 1);
-			expect(col.items).toBe([expectedObj]);
+			expect(col.items).toEqual([expectedObj]);
 		});
+	});
+});
+describe('Instance constructor optional parameter.', function() {
+	it('`Collection.items` setter must trigger callback.', function() {
+		const expectedValue = [{id:1}];
+		const callback = (_v) => {
+				console.log(_v, expectedValue);
+			try {
+				expect(_v).toEqual([{id:1}]);
+				done();
+			} catch(e) {
+				done(e);
+			}
+		};
+		const col = new Collection(callback);
+		col.items = expectedValue;
 	});
 });
