@@ -122,10 +122,13 @@ class Collection {
 		this.items = arr;
 	}
 
-	push(item) {
+    contains(item) {
 		this.throwNotObject(item);
-		const alreadyIn = this.collection.some(_i => _i[this.pk] === item[this.pk]);
-		if (alreadyIn) return false;
+        return this.collection.some(_i => _i[this.pk] === item[this.pk]);
+    }
+
+	push(item) {
+		if (this.contains(item)) return false;
 
 		if (this.quantify > 0) {
 			item = this.adjustObjectQuantity(item);
